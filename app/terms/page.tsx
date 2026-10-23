@@ -1,0 +1,2 @@
+import { PolicyPage } from "@/components/PolicyPage";
+export default function TermsPage(){return <PolicyPage eyebrow="LEGAL" title="Terms placeholder"><h2>Approval required</h2><p>Publish final commercial terms only after review. They should identify the contracting business, accepted payment methods, proposal validity, responsibilities, third-party suppliers and dispute process.</p></PolicyPage>}

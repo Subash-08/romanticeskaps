@@ -1,0 +1,2 @@
+import { PolicyPage } from "@/components/PolicyPage";
+export default function PrivacyPage(){return <PolicyPage eyebrow="LEGAL" title="Privacy placeholder"><h2>Before launch</h2><p>This page must be replaced with an approved privacy notice that explains which enquiry details are collected, why they are used, where they are stored, who can access them, and how a visitor can request deletion.</p><h2>Current prototype</h2><p>The local enquiry demonstrations do not transmit or store visitor information.</p></PolicyPage>}
