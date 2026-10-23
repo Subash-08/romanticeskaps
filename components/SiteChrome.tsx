@@ -23,7 +23,7 @@ export function InnerHeader() {
       <nav className="inner-nav" aria-label="Primary navigation">
         {navItems.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
       </nav>
-      <Link className="inner-plan" href="/enquiry">Plan our honeymoon</Link>
+      <Link className="inner-plan" href="/enquiry">Get In Touch</Link>
       <button className="inner-menu-trigger" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? <X /> : <Menu />}</button>
     </div>
     <nav className={`inner-mobile-nav ${open ? "open" : ""}`} aria-hidden={!open}>
@@ -52,7 +52,7 @@ export function SiteFooter() {
         {groups.map(([heading, links]) => <div key={heading}><b>{heading}</b>{links.map(([label, href]) => <Link key={label} href={href}>{label}</Link>)}</div>)}
       </div>
     </div>
-    <div className="footer-word" aria-label="romanticeskaps">romanticeskaps</div>
+    <div className="footer-word" aria-label="ROMANTICESKAPS" aria-hidden="true">ROMANTICESKAPS</div>
     <div className="footer-bottom"><span>© 2026 ROMANTICESKAPS</span><span>HONEYMOONS, THOUGHTFULLY MADE</span><Link href="#top">Back to top <ArrowUp size={14} /></Link></div>
   </footer>;
 }
