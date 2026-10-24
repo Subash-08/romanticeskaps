@@ -79,7 +79,7 @@ function Header({ onPlan }: { onPlan: () => void }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
-  const links = [["Home", "/"], ["Packages", "/packages"], ["Experiences", "/#experiences"], ["About", "/about"], ["Journal", "/journal"]];
+  const links = [["Home", "/"], ["Packages", "/packages"], ["Gallery", "/gallery"], ["About", "/about"], ["Journal", "/journal"]];
   return <>
     <header className="site-header"><Brand /><nav className="desktop-nav" aria-label="Primary navigation">{links.map(([l, h]) => <a href={h} key={h}>{l}</a>)}</nav><button className="header-plan" onClick={onPlan}>Get In Touch <span><Plane size={18} /></span></button><button ref={trigger} className="menu-trigger" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(v => !v)}>{open ? <X /> : <Menu />}<span className="sr-only">Menu</span></button></header>
     <div id="mobile-menu" ref={panel} className={`mobile-menu ${open ? "open" : ""}`} aria-hidden={!open}>
@@ -318,6 +318,156 @@ function TheRomanticeskapsWay({ onPlan }: { onPlan: () => void }) {
   );
 }
 
+function HeroFlightRoute() {
+  const pathRef = useRef<SVGPathElement>(null);
+  const planeRef = useRef<SVGGElement>(null);
+  const trailRef = useRef<SVGPathElement>(null);
+
+  useEffect(() => {
+    const path = pathRef.current;
+    const plane = planeRef.current;
+    const trail = trailRef.current;
+    if (!path || !plane) return;
+
+    let totalLen = 540;
+    try {
+      const l = path.getTotalLength();
+      if (l > 0) totalLen = l;
+    } catch (e) {}
+
+    if (trail) {
+      trail.style.strokeDasharray = `${totalLen}`;
+      trail.style.strokeDashoffset = `${totalLen}`;
+    }
+
+    let startTime: number | null = null;
+    let frameId: number;
+    const duration = 6800; // 6.8s smooth flight cycle
+
+    const loop = (time: number) => {
+      if (!startTime) startTime = time;
+      const elapsed = time - startTime;
+      const raw = (elapsed % duration) / duration;
+
+      // 0 to 0.85 is flying; 0.85 to 1.0 is arrival pause before next flight
+      let p = 0;
+      let opacity = 1;
+      if (raw < 0.85) {
+        const t = raw / 0.85;
+        // Smooth cubic in-out curve for takeoff, cruise and landing
+        p = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        if (t < 0.08) opacity = t / 0.08;
+        else if (t > 0.92) opacity = (1 - t) / 0.08;
+      } else {
+        p = 1;
+        opacity = 0;
+      }
+
+      try {
+        const currentLen = Math.max(0.1, Math.min(totalLen, p * totalLen));
+        const pt = path.getPointAtLength(currentLen);
+        const lookAhead = Math.min(totalLen, currentLen + 3);
+        const ptNext = path.getPointAtLength(lookAhead);
+        const angle = Math.atan2(ptNext.y - pt.y, ptNext.x - pt.x) * (180 / Math.PI);
+
+        plane.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${angle})`);
+        plane.style.opacity = `${opacity}`;
+
+        if (trail) {
+          trail.style.strokeDashoffset = `${totalLen * (1 - p)}`;
+          trail.style.opacity = `${opacity * 0.95}`;
+        }
+      } catch (err) {}
+
+      frameId = requestAnimationFrame(loop);
+    };
+
+    frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  return (
+    <div className="hero-route" aria-hidden="true">
+      <div className="route-pill">
+        <span className="route-pill-dot" />
+        <span className="route-pill-text">HONEYMOON FLIGHT</span>
+        <span className="route-pill-meta">MLE → DPS</span>
+      </div>
+
+      <svg viewBox="0 0 520 180" className="route-svg">
+        <defs>
+          <linearGradient id="flightGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#ff6542" stopOpacity="0.2" />
+            <stop offset="35%" stopColor="#ff7a5a" stopOpacity="0.9" />
+            <stop offset="70%" stopColor="#ff6542" stopOpacity="1" />
+            <stop offset="100%" stopColor="#ffa085" stopOpacity="0.9" />
+          </linearGradient>
+          <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" mode="over" />
+          </filter>
+        </defs>
+
+        {/* Base dashed flight arc */}
+        <path
+          ref={pathRef}
+          d="M 44 140 C 180 18, 340 30, 476 132"
+          className="route-base-path"
+        />
+
+        {/* Dynamic jet stream trail */}
+        <path
+          ref={trailRef}
+          d="M 44 140 C 180 18, 340 30, 476 132"
+          className="route-active-trail"
+        />
+
+        {/* Departure Pin (MLE) */}
+        <g className="route-stop-pin" transform="translate(44, 140)">
+          <circle r="12" className="stop-ping" />
+          <circle r="7" className="stop-halo" />
+          <circle r="4" className="stop-core" />
+        </g>
+
+        {/* Arrival Pin (DPS) */}
+        <g className="route-stop-pin" transform="translate(476, 132)">
+          <circle r="12" className="stop-ping" />
+          <circle r="7" className="stop-halo" />
+          <circle r="4" className="stop-core" />
+        </g>
+
+        {/* Guided Airplane with realistic rotation */}
+        <g ref={planeRef} className="route-plane-group">
+          <circle r="18" className="plane-halo" />
+          <circle r="13" className="plane-core" />
+          {/* Symmetrical supersonic passenger jet facing forward (+X / 0deg) */}
+          <path
+            d="M 9 0 L -2 -7 L -4 -7 L -1 -2 L -6 -2 L -8 -5 L -9 -5 L -8.5 0 L -9 5 L -8.5 5 L -6 2 L -1 2 L -4 7 L -2 7 Z"
+            fill="#ffffff"
+            className="plane-jet-svg"
+          />
+        </g>
+      </svg>
+
+      {/* Origin Badge */}
+      <div className="route-tag tag-mle">
+        <div className="tag-box">
+          <span className="tag-code">MLE</span>
+          <span className="tag-name">Maldives</span>
+        </div>
+      </div>
+
+      {/* Destination Badge */}
+      <div className="route-tag tag-dps">
+        <div className="tag-box">
+          <span className="tag-code">DPS</span>
+          <span className="tag-name">Bali</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [plannerOpen, setPlannerOpen] = useState(false);
   useEffect(() => {
@@ -356,7 +506,7 @@ export default function Home() {
         <p className="hero-copy">Beautiful destinations, private stays, and unforgettable experiences — thoughtfully planned for the two of you.</p>
         <div className="hero-actions"><ArrowButton label="Plan Our Honeymoon" primary onClick={() => setPlannerOpen(true)} /><ArrowButton label="Explore Destinations" href="#journeys" /></div>
       </div>
-      <div className="route" aria-hidden="true"><svg viewBox="0 0 520 180"><path d="M24 142 C 176 10, 336 28, 496 126" /><circle cx="24" cy="142" r="7" /><circle cx="496" cy="126" r="7" /></svg><span className="route-a">MLE</span><span className="route-b">DPS</span><i><Plane size={21} /></i></div>
+      <HeroFlightRoute />
       <div className="hero-lower"><div className="service-bar">{["TAILORED JOURNEY", "PRIVATE MOMENTS", "HANDPICKED STAYS", "HUMAN SUPPORT"].map((x, i) => <div key={x}><strong>0{i + 1}</strong><span>{x}</span></div>)}</div><div className="ticket"><img src="/images/island.jpg" alt="Maldives island" /><div><span>FEATURED ESCAPE</span><strong>Maldives, Made for Two</strong><p>MLE <i /> 7 nights <i /> Sample</p></div><Plane /></div></div>
     </section>
 
@@ -365,11 +515,9 @@ export default function Home() {
 
       <section className="section journeys" id="journeys"><div className="split-head reveal"><div><Eyebrow>EXPLORE</Eyebrow><h2>Find a honeymoon that feels like yours.</h2></div><div><p>Private islands, vibrant culture, misty mountains, and unhurried days — shaped around the two of you.</p><a className="text-link" href="#journey-grid">View All Journeys <ArrowUpRight size={15} /></a></div></div><div className="journey-grid" id="journey-grid">{journeys.map((j, i) => <JourneyCard key={j.code} item={j} index={i} />)}</div></section>
 
-      <section className="experiences" id="experiences"><div className="experience-head reveal"><div><Eyebrow light>EXPERIENCE</Eyebrow><h2>Not just a beautiful place.<br /><em>A beautiful way to begin.</em></h2></div><div><p>We leave room for privacy, connection, small discoveries, and the joy of having nowhere else to be.</p><a className="text-link light-link" href="#gallery">Explore Experiences <ArrowUpRight size={15} /></a></div></div><div className="polaroids">
+      <section className="experiences" id="experiences"><div className="experience-head reveal"><div><Eyebrow light>EXPERIENCE</Eyebrow><h2>Not just a beautiful place.<br /><em>A beautiful way to begin.</em></h2></div><div><p>We leave room for privacy, connection, small discoveries, and the joy of having nowhere else to be.</p><Link className="text-link light-link" href="/gallery">Explore Experiences <ArrowUpRight size={15} /></Link></div></div><div className="polaroids">
         {[{ n: "01", t: "Private Beach Dinners", c: "An evening arranged only for the two of you.", img: "/images/dinner.jpg" }, { n: "02", t: "Local Encounters", c: "Experiences that make a place feel personal.", img: "/images/island.jpg" }, { n: "03", t: "Slow Mornings", c: "Leave room for nowhere else to be.", img: "/images/pool.jpg" }].map((p, i) => <article className={`polaroid polaroid-${i + 1} reveal`} key={p.n}><span className="tape" /><img src={p.img} alt={p.t} /><h3><small>{p.n}</small>{p.t}</h3><p>{p.c}</p></article>)}
       </div></section>
-
-      <section className="section gallery" id="gallery"><div className="gallery-intro reveal"><Eyebrow>YOUR JOURNEY</Eyebrow><h2><em>See where your story could take you.</em></h2><p>A glimpse of private stays, shared discoveries, and the beautiful in-between moments that make a honeymoon yours.</p></div><button className="film reveal" onClick={() => setPlannerOpen(true)}><img src="/images/island.jpg" alt="Aerial view of a tropical island resort" /><span className="film-overlay" /><span className="film-disc"><ArrowUpRight /><b>EXPLORE THE STORY</b></span><span className="film-meta"><b>ROMANTICESKAPS · HONEYMOON JOURNEY</b><i>MLE → DPS</i></span></button><p className="quiet-line">Some beginnings are better felt than explained.</p></section>
 
       <section className="section benefits"><div className="split-head reveal"><div><Eyebrow>PLAN WITH EASE</Eyebrow><h2>Beautifully planned. Effortlessly enjoyed.</h2></div><div><p>From the first idea to the journey home, every detail is made clear, calm, and personal.</p><button className="text-link button-link" onClick={() => setPlannerOpen(true)}>Start Planning <ArrowUpRight size={15} /></button></div></div><div className="benefit-line">{benefits.map((b, i) => { const Icon = b.icon; return <article key={b.title} className={`benefit-card ${i % 2 === 0 ? "light" : "dark"} reveal`} style={{ "--delay": `${i * 70}ms` } as React.CSSProperties}><span className="benefit-icon"><Icon /></span><h3>{b.title}</h3><p>{b.copy}</p><small>TAG 0{i + 1}</small></article> })}</div></section>
 
@@ -377,13 +525,40 @@ export default function Home() {
 
       <section className="section promises"><div className="promise-intro reveal"><Eyebrow>WHY ROMANTICESKAPS</Eyebrow><h2>Six promises behind every honeymoon.</h2><p>Thoughtful planning, carefully selected options, and a real person to help shape your journey.</p></div><div className="promise-grid">{promises.map(([t, c], i) => <article className="reveal" style={{ "--delay": `${i * 65}ms` } as React.CSSProperties} key={t}><span>0{i + 1}</span><div><h3>{t}</h3><p>{c}</p></div></article>)}</div></section>
 
-      <section className="section planners" id="planners"><div className="split-head reveal"><div><Eyebrow>MEET ROMANTICESKAPS</Eyebrow><h2><em>People who plan with heart.</em></h2></div><div><p>Behind each journey is a person who listens, researches, and brings the pieces together with care.</p><Link className="text-link" href="/about">How we plan</Link></div></div><div className="passport reveal"><div className="passport-photo"><img src="/images/dinner.jpg" alt="Placeholder travel planner portrait" /><span>PLACEHOLDER PORTRAIT</span></div><div className="passport-info"><p className="passport-title">◉ PASSPORT · PASSEPORT · ROMANTICESKAPS</p><div className="passport-fields">{[["SURNAME", "Placeholder"], ["GIVEN NAMES", "Planner Name"], ["BASE", "To be confirmed"], ["ROLE", "Honeymoon Designer"], ["JOINED", "Pending"], ["JOURNEYS PLANNED", "Not published"]].map(([k, v]) => <div key={k}><small>{k}</small><strong>{v}</strong></div>)}</div><blockquote>“This quotation is placeholder copy and must be replaced with an approved team statement before launch.”</blockquote><p className="machine">P&lt;ROMANTICESKAPS&lt;&lt;PLANNER&lt;DETAILS&lt;PENDING&lt;&lt;&lt;&lt;&lt;</p></div></div><div className="route-ticker"><span>KERALA • KASHMIR • SIKKIM • DARJEELING • SHIMLA • MANALI • ANDAMAN •</span></div></section>
+      <section className="section journal journal-home-cta" id="journal"><div className="split-head reveal"><div><Eyebrow>THE JOURNAL</Eyebrow><h2>Useful guidance, published with purpose.</h2></div><div><p>Destination notes and honeymoon-planning answers will appear here only after they are researched, reviewed, and approved.</p><Link className="text-link" href="/journal">Visit the journal <ArrowUpRight size={15} /></Link></div></div></section>
 
-      <section className="section journal" id="journal"><div className="split-head reveal"><div><Eyebrow>THE JOURNAL</Eyebrow><h2>Ideas for the beginning of forever.</h2></div><div><p>Destination comparisons, planning guidance, and inspiration for a journey that feels like yours.</p><span className="text-link">Sample editorial content</span></div></div><div className="journal-grid"><article className="feature-article reveal"><div className="article-image"><img src="/images/dinner.jpg" alt="Romantic dinner at sunset" /><span>PLANNING GUIDE · 6 MIN READ</span></div><h3>How to Choose Your Perfect Honeymoon Destination</h3><p>A simple way to narrow the world down to the place that feels right for both of you.</p><button>Read story <ArrowUpRight size={15} /></button></article><div className="mini-articles">{[["Maldives vs Bali: Which Honeymoon Suits You?", "/images/island.jpg", "DESTINATIONS · 8 MIN"], ["Planning a Romantic Escape in the Mountains", "/images/dinner.jpg", "TRAVEL TIPS · 5 MIN"], ["The Art of Slowing Down Together", "/images/island.jpg", "STORIES · 4 MIN"]].map(([t, img, tag]) => <article className="reveal" key={t}><img src={img} alt="" /><div><small>{tag}</small><h3>{t}</h3><button>Read story <ArrowUpRight size={14} /></button></div></article>)}</div></div></section>
+      <section className="section faq" id="faq"><div className="faq-intro reveal"><Eyebrow>GOOD TO KNOW</Eyebrow><h2>Everything you need before you go.</h2><p>A few helpful answers while you imagine the journey.</p><button className="text-link button-link" onClick={() => setPlannerOpen(true)}>Talk to a Planner <ArrowUpRight size={15} /></button></div><FaqAccordion /></section>
 
-      <section className="section faq"><div className="faq-intro reveal"><Eyebrow>GOOD TO KNOW</Eyebrow><h2>Everything you need before you go.</h2><p>A few helpful answers while you imagine the journey.</p><button className="text-link button-link" onClick={() => setPlannerOpen(true)}>Talk to a Planner <ArrowUpRight size={15} /></button></div><FaqAccordion /></section>
-
-      <section className="closing"><img src="/images/dinner.jpg" alt="Romantic sunset dinner over the water" /><div className="closing-shade" /><div className="closing-copy reveal"><Eyebrow light>START TOGETHER</Eyebrow><h2>Your forever starts with a beautiful journey.</h2><p>Tell us how you imagine your honeymoon. We’ll help shape an experience that feels unmistakably yours.</p><ArrowButton label="Start Planning" primary onClick={() => setPlannerOpen(true)} /></div></section>
+      <section className="closing cta-section" id="start-planning">
+        <img src="/images/dinner.jpg" alt="Romantic candlelit dinner over the water at sunset" className="closing-hero-img" />
+        <div className="closing-shade" />
+        <div className="closing-glow" aria-hidden="true" />
+        <div className="closing-card reveal">
+          <div className="cta-badge">
+            <span className="cta-badge-dot" />
+            <span>START YOUR JOURNEY</span>
+          </div>
+          <h2>Your forever starts with a <em>beautiful journey</em>.</h2>
+          <p className="cta-copy">
+            Tell us how you imagine your honeymoon. From private island mornings to mountain air and candlelit evenings, we’ll help shape an experience that feels unmistakably yours.
+          </p>
+          <div className="cta-actions">
+            <button className="cta-primary-btn" onClick={() => setPlannerOpen(true)}>
+              <span>Start Planning Our Honeymoon</span>
+              <span className="cta-btn-arrow"><ArrowUpRight size={18} /></span>
+            </button>
+            <Link className="cta-secondary-btn" href="/enquiry">
+              <span>Request Custom Proposal</span>
+              <ArrowUpRight size={16} />
+            </Link>
+          </div>
+          <div className="cta-trust-strip">
+            <div className="trust-item"><Sparkles size={14} /><span>Complimentary Initial Proposal</span></div>
+            <div className="trust-item"><Compass size={14} /><span>Handpicked Romantic Stays</span></div>
+            <div className="trust-item"><Plane size={14} /><span>100% Personalised Route</span></div>
+          </div>
+        </div>
+      </section>
 
       <div className="destination-marquee" aria-label="Featured destinations"><div>{Array(2).fill("Kerala · Kashmir · Gangtok · Darjeeling · Shimla · Manali · Andaman · Munnar · Alleppey · Havelock · ").map((x, i) => <span key={i}>{x}</span>)}</div></div>
 

@@ -1,0 +1,4 @@
+import type { MetadataRoute } from "next";
+import { getPackages, getPosts } from "@/lib/content-store";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> { const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"; const staticPages = ["", "/packages", "/journal", "/about", "/gallery", "/enquiry"].map(path => ({ url: `${base}${path}`, lastModified: new Date(), changeFrequency: path === "" ? "weekly" as const : "monthly" as const, priority: path === "" ? 1 : .7 })); const packages = (await getPackages()).map(item => ({ url: `${base}/packages/${item.slug}`, lastModified: new Date(item.updatedAt), changeFrequency: "weekly" as const, priority: .8 })); const posts = (await getPosts()).map(item => ({ url: `${base}/journal/${item.slug}`, lastModified: new Date(item.updatedAt), changeFrequency: "monthly" as const, priority: .7 })); return [...staticPages, ...packages, ...posts]; }

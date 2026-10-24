@@ -3,23 +3,30 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, Check, Clock3, MapPin, Users, X } from "lucide-react";
 import { InnerHeader, SiteFooter } from "@/components/SiteChrome";
-import { formatPrice, getPackage, honeymoonPackages } from "@/lib/packages";
+import { formatPrice } from "@/lib/packages";
+import { getPackageRecord, getPackages } from "@/lib/content-store";
 
-export function generateStaticParams() {
-  return honeymoonPackages.map(item => ({ slug: item.slug }));
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  return (await getPackages()).map(item => ({ slug: item.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const item = getPackage((await params).slug);
+  const item = await getPackageRecord((await params).slug);
   if (!item) return {};
-  return { title: `${item.title} | romanticeskaps`, description: item.summary };
+  return { title: item.metaTitle || `${item.title} | romanticeskaps`, description: item.metaDescription || item.summary, alternates: { canonical: item.canonicalUrl || `/packages/${item.slug}` }, robots: { index: !item.noIndex, follow: !item.noFollow }, openGraph: { title: item.ogTitle || item.title, description: item.ogDescription || item.summary, images: item.ogImage ? [item.ogImage] : [item.image], type: "website" }, twitter: { card: item.twitterCard, title: item.twitterTitle || item.title, description: item.twitterDescription || item.summary, images: item.twitterImage ? [item.twitterImage] : [item.image] } };
 }
 
 export default async function PackageDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const item = getPackage((await params).slug);
+  const item = await getPackageRecord((await params).slug);
   if (!item) notFound();
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const structuredData = { "@context": "https://schema.org", "@type": "TouristTrip", name: item.title, description: item.summary, touristType: "Honeymoon couples", itinerary: item.itinerary.map(day => ({ "@type": "TouristAttraction", name: `Day ${day.day}: ${day.title}`, description: day.description })), offers: { "@type": "Offer", priceCurrency: "INR", price: item.priceFrom, url: `${baseUrl}/packages/${item.slug}`, availability: "https://schema.org/LimitedAvailability" }, provider: { "@type": "TravelAgency", name: "romanticeskaps", url: baseUrl } };
+
   return <main id="top" className="inner-page package-detail-page">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
     <InnerHeader />
     <section className="package-detail-hero">
       <img src={item.image} alt={`${item.destination} landscape`} style={{ objectPosition: item.imagePosition }} />
@@ -40,7 +47,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
     </section>
 
     <section className="detail-overview section">
-      <div className="detail-intro"><p className="eyebrow"><span />THE JOURNEY</p><h2>A clear plan, with room to make it personal.</h2><p>{item.mealPlan}. Every listed detail can later be managed from the planned admin package editor.</p></div>
+      <div className="detail-intro"><p className="eyebrow"><span />THE JOURNEY</p><h2>A clear plan, with room to make it personal.</h2><p>{item.mealPlan}. Dates, stays and availability are reconfirmed before booking.</p></div>
       <div className="detail-highlights">{item.highlights.map((highlight, index) => <article key={highlight}><span>0{index + 1}</span><strong>{highlight}</strong></article>)}</div>
     </section>
 

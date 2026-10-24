@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { ArrowUp, Compass, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function SiteBrand() {
   return <Link className="brand" href="/" aria-label="romanticeskaps home"><span className="brand-mark"><Compass size={18} /></span><span>romanticeskaps</span></Link>;
 }
 
 const navItems = [
+  ["Home", "/"],
   ["Packages", "/packages"],
+  ["Gallery", "/gallery"],
   ["About", "/about"],
   ["Journal", "/journal"],
   ["Enquire", "/enquiry"],
@@ -17,24 +20,25 @@ const navItems = [
 
 export function InnerHeader() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   return <header className="inner-header-shell">
     <div className="inner-header">
       <SiteBrand />
       <nav className="inner-nav" aria-label="Primary navigation">
-        {navItems.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+        {navItems.map(([label, href]) => <Link key={href} href={href} className={pathname === href ? "active" : ""} aria-current={pathname === href ? "page" : undefined}>{label}</Link>)}
       </nav>
       <Link className="inner-plan" href="/enquiry">Get In Touch</Link>
       <button className="inner-menu-trigger" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? <X /> : <Menu />}</button>
     </div>
     <nav className={`inner-mobile-nav ${open ? "open" : ""}`} aria-hidden={!open}>
-      {navItems.map(([label, href], index) => <Link key={href} href={href} onClick={() => setOpen(false)}><span>0{index + 1}</span>{label}</Link>)}
+      {navItems.map(([label, href], index) => <Link key={href} href={href} className={pathname === href ? "active" : ""} aria-current={pathname === href ? "page" : undefined} onClick={() => setOpen(false)}><span>0{index + 1}</span>{label}</Link>)}
     </nav>
   </header>;
 }
 
 export function SiteFooter() {
   const groups = [
-    ["EXPLORE", [["Home", "/"], ["Packages", "/packages"], ["About", "/about"], ["Journal", "/journal"]]],
+    ["EXPLORE", [["Home", "/"], ["Packages", "/packages"], ["Gallery", "/gallery"], ["About", "/about"], ["Journal", "/journal"]]],
     ["PLAN", [["Enquire", "/enquiry"], ["How it works", "/about#how-it-works"], ["FAQ", "/#faq"], ["Contact", "/enquiry"]]],
     ["DESTINATIONS", [["Kerala", "/packages/kerala-backwaters-and-munnar"], ["Kashmir", "/packages/kashmir-valleys-and-shikara"], ["Andaman", "/packages/andaman-island-honeymoon"]]],
     ["LEGAL", [["Privacy", "/privacy"], ["Terms", "/terms"], ["Booking conditions", "/booking-conditions"]]],

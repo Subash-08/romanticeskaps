@@ -1,6 +1,8 @@
 node_modules/
 .next/
 .npm-cache/
+data/content.json
+data/*.tmp
 out/
 *.log
 .env*

@@ -2,14 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, MapPin, Users } from "lucide-react";
 import { InnerHeader, SiteFooter } from "@/components/SiteChrome";
-import { formatPrice, honeymoonPackages } from "@/lib/packages";
+import { formatPrice } from "@/lib/packages";
+import { getPackages } from "@/lib/content-store";
 
 export const metadata: Metadata = {
   title: "Honeymoon Packages | romanticeskaps",
   description: "Explore romanticeskaps honeymoon packages across India, with editable itineraries, stays and inclusions.",
 };
 
-export default function PackagesPage() {
+export const revalidate = 3600;
+
+export default async function PackagesPage() {
+  const honeymoonPackages = await getPackages();
   return <main id="top" className="inner-page">
     <InnerHeader />
     <section className="packages-hero">
